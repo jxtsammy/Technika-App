@@ -86,6 +86,7 @@ const SignUpScreen = ({ navigation }) => {
 
             const {
                 token,
+                _id,
                 firstName: fName,
                 lastName: lName,
                 role,
@@ -93,7 +94,12 @@ const SignUpScreen = ({ navigation }) => {
             await AsyncStorage.setItem("token", token);
             await AsyncStorage.setItem(
                 "user",
-                JSON.stringify({ firstName: fName, lastName: lName, role }),
+                JSON.stringify({
+                    _id,
+                    firstName: fName,
+                    lastName: lName,
+                    role,
+                }),
             );
 
             // Keep your existing verification flow — just pass userData as you already do
@@ -149,7 +155,7 @@ const SignUpScreen = ({ navigation }) => {
                                 Already have an account?{" "}
                             </Text>
                             <TouchableOpacity
-                                onPress={() => navigation.navigate("Login")}
+                                onPress={() => navigation.navigate("login")}
                             >
                                 <Text style={styles.signInLink}>Log In</Text>
                             </TouchableOpacity>
