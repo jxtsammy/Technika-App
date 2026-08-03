@@ -28,6 +28,7 @@ import Tasks from "./Task";
 import Profile from "../Profile&Settings/ProfileScreen";
 import api from "../../api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Location from "expo-location";
 
 const Tab = createBottomTabNavigator();
 const { width } = Dimensions.get("window");
@@ -353,6 +354,43 @@ export default function App({ navigation }) {
         });
         loadUnreadCount();
     }, []);
+
+    // Push location to the backend on an interval while the technician is
+    // online. This is what actually feeds the admin's live map — previously
+    // nothing in the app ever called PUT /users/location after onboarding.
+    useEffect(() => {
+        if (!isOnline) return;
+
+        let cancelled = false;
+
+        const pushLocation = async () => {
+            try {
+                const { status } =
+                    await Location.getForegroundPermissionsAsync();
+                if (status !== "granted") {
+                    const req =
+                        await Location.requestForegroundPermissionsAsync();
+                    if (req.status !== "granted") return;
+                }
+                const position = await Location.getCurrentPositionAsync({});
+                if (cancelled) return;
+                await api.put("/users/location", {
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                });
+            } catch (error) {
+                console.error("Failed to push location:", error);
+            }
+        };
+
+        pushLocation(); // push immediately on going online, then on an interval
+        const intervalId = setInterval(pushLocation, 60000); // every 60s
+
+        return () => {
+            cancelled = true;
+            clearInterval(intervalId);
+        };
+    }, [isOnline]);
 
     const loadUnreadCount = async () => {
         try {

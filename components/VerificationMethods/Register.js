@@ -15,7 +15,7 @@ import {
     ScrollView,
     Alert,
 } from "react-native";
-import CountryPicker from "react-native-country-picker-modal";
+import { CountryPicker } from "react-native-country-codes-picker";
 import { Eye, EyeOff, ArrowLeft } from "lucide-react-native";
 import api from "../../api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -33,14 +33,9 @@ const SignUpScreen = ({ navigation }) => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [focusedInput, setFocusedInput] = useState(null);
 
-    const [countryCode, setCountryCode] = useState("GH");
-    const [callingCode, setCallingCode] = useState("233");
+    const [callingCode, setCallingCode] = useState("+233");
+    const [flag, setFlag] = useState("🇬🇭");
     const [showCountryPicker, setShowCountryPicker] = useState(false);
-
-    const onSelectCountry = (country) => {
-        setCountryCode(country.cca2);
-        setCallingCode(country.callingCode[0]);
-    };
 
     const validatePassword = (pass) => {
         const hasUpperCase = /[A-Z]/.test(pass);
@@ -73,7 +68,7 @@ const SignUpScreen = ({ navigation }) => {
             return;
         }
 
-        const completePhoneNumber = `+${callingCode}${phoneNumber}`;
+        const completePhoneNumber = `${callingCode}${phoneNumber}`;
 
         try {
             const response = await api.post("/auth/register", {
@@ -235,22 +230,24 @@ const SignUpScreen = ({ navigation }) => {
                                     style={styles.countryPickerButton}
                                     onPress={() => setShowCountryPicker(true)}
                                 >
-                                    <CountryPicker
-                                        countryCode={countryCode}
-                                        withFilter
-                                        withFlag
-                                        withCallingCode
-                                        withEmoji
-                                        onSelect={onSelectCountry}
-                                        visible={showCountryPicker}
-                                        onClose={() =>
-                                            setShowCountryPicker(false)
-                                        }
-                                    />
+                                    <Text style={styles.flagEmoji}>{flag}</Text>
                                     <Text style={styles.callingCode}>
-                                        +{callingCode}
+                                        {callingCode}
                                     </Text>
                                 </TouchableOpacity>
+
+                                <CountryPicker
+                                    show={showCountryPicker}
+                                    lang="en"
+                                    pickerButtonOnPress={(item) => {
+                                        setCallingCode(item.dial_code);
+                                        setFlag(item.flag);
+                                        setShowCountryPicker(false);
+                                    }}
+                                    onBackdropPress={() =>
+                                        setShowCountryPicker(false)
+                                    }
+                                />
 
                                 <TextInput
                                     style={styles.phoneInput}
@@ -454,6 +451,9 @@ const styles = StyleSheet.create({
         paddingRight: width * 0.03,
         borderRightWidth: 1,
         borderRightColor: "#E0E0E0",
+    },
+    flagEmoji: {
+        fontSize: width * 0.055,
     },
     callingCode: {
         fontSize: width * 0.04,
