@@ -1,7 +1,9 @@
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const BASE_URL = "https://headfirst-native-parish.ngrok-free.dev/api"; // NGROK URL
+const BASE_URL =
+    process.env.EXPO_PUBLIC_API_URL ||
+    "https://headfirst-native-parish.ngrok-free.dev/api"; // fallback if .env isn't set
 
 const api = axios.create({
     baseURL: BASE_URL,
