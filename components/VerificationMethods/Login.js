@@ -103,6 +103,17 @@ const SignInScreen = ({ navigation }) => {
         setIsLoading(true);
         try {
             const response = await api.post("/auth/login", { email, password });
+
+            if (response.data.twoStepRequired) {
+                navigation.navigate("verification", {
+                    mode: "login",
+                    preAuthToken: response.data.preAuthToken,
+                    rememberMe,
+                    email,
+                });
+                return;
+            }
+
             const { token, _id, firstName, lastName, role } = response.data;
 
             await AsyncStorage.setItem("token", token);

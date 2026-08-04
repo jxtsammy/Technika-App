@@ -12,14 +12,26 @@ import {
     StatusBar,
 } from "react-native";
 import { ArrowLeft, Alert } from "lucide-react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../api";
 
 const { height, width } = Dimensions.get("window");
 
-const PhoneVerification = ({ navigation }) => {
+const PhoneVerification = ({ navigation, route }) => {
     const [otp, setOtp] = useState(["", "", "", ""]);
     const [timer, setTimer] = useState(30); //30-second countdown tracker
     const [canResend, setCanResend] = useState(false);
+
+    // Reused for two flows:
+    //  - signup verification (default): hits /auth/verify-otp, then -> 'success'
+    //  - login 2FA: hits /auth/verify-login-otp with the preAuthToken from
+    //    Login.js, then completes the session and -> 'home'
+    const {
+        mode = "signup",
+        preAuthToken,
+        rememberMe,
+        email,
+    } = route?.params || {};
 
     // Start countdown effect when screen loads
     useEffect(() => {
@@ -44,6 +56,26 @@ const PhoneVerification = ({ navigation }) => {
         }
 
         try {
+            if (mode === "login") {
+                const response = await api.post("/auth/verify-login-otp", {
+                    preAuthToken,
+                    otp: code,
+                });
+                const { token, _id, firstName, lastName, role } = response.data;
+
+                await AsyncStorage.setItem("token", token);
+                await AsyncStorage.setItem(
+                    "user",
+                    JSON.stringify({ _id, firstName, lastName, role }),
+                );
+                if (rememberMe && email) {
+                    await AsyncStorage.setItem("rememberedEmail", email);
+                }
+
+                navigation.replace("home");
+                return;
+            }
+
             await api.post("/auth/verify-otp", { otp: code });
             navigation.replace("success");
         } catch (error) {
