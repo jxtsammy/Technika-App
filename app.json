@@ -1,68 +1,69 @@
-// !!I've made a lot of changes. Possibly breaking ones. You're the mobile guy so go through gimme
-
 {
-    "expo": {
-        "name": "Technika",
-        "slug": "Technika",
-        "version": "1.0.0",
-        "orientation": "portrait",
-        "icon": "./assets/icon.png",
-        "userInterfaceStyle": "light",
-        "assetBundlePatterns": ["**/*"],
-        "ios": {
-            "supportsTablet": false,
-            "bundleIdentifier": "com.genau.technika",
-            "infoPlist": {
-                "NSLocationWhenInUseUsageDescription": "Technika uses your location to show nearby jobs and let admins track technicians in the field.",
-                "NSCameraUsageDescription": "Technika needs camera access so you can attach photos to task reports.",
-                "NSPhotoLibraryUsageDescription": "Technika needs photo library access so you can attach photos to task reports.",
-                "NSFaceIDUsageDescription": "Technika uses Face ID to let you sign in quickly and securely."
-            }
-        },
-        "android": {
-            "package": "com.genau.technika",
-            "adaptiveIcon": {
-                "foregroundImage": "./assets/adaptive-icon.png",
-                "backgroundColor": "#007a3f"
-            },
-            "permissions": [
-                "ACCESS_FINE_LOCATION",
-                "ACCESS_COARSE_LOCATION",
-                "CAMERA",
-                "READ_EXTERNAL_STORAGE",
-                "USE_BIOMETRIC",
-                "USE_FINGERPRINT"
-            ]
-        },
-        "plugins": [
-            [
-                "expo-splash-screen",
-                {
-                    "image": "./assets/splash.png",
-                    "imageWidth": 200,
-                    "resizeMode": "contain",
-                    "backgroundColor": "#007a3f"
-                }
-            ],
-            [
-                "expo-location",
-                {
-                    "locationAlwaysAndWhenInUsePermission": "Technika uses your location to show nearby jobs and let admins track technicians in the field."
-                }
-            ],
-            [
-                "expo-image-picker",
-                {
-                    "photosPermission": "Technika needs photo library access so you can attach photos to task reports.",
-                    "cameraPermission": "Technika needs camera access so you can attach photos to task reports."
-                }
-            ],
-            [
-                "expo-local-authentication",
-                {
-                    "faceIDPermission": "Technika uses Face ID to let you sign in quickly and securely."
-                }
-            ]
-        ]
-    }
+  "expo": {
+    "name": "Technika",
+    "slug": "Technika",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.genau.technika",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Technika uses your location to show nearby jobs and let admins track technicians in the field.",
+        "NSCameraUsageDescription": "Technika needs camera access so you can attach photos to task reports.",
+        "NSPhotoLibraryUsageDescription": "Technika needs photo library access so you can attach photos to task reports.",
+        "NSFaceIDUsageDescription": "Technika uses Face ID to let you sign in quickly and securely."
+      }
+    },
+    "android": {
+      "package": "com.genau.technika",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#007a3f"
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#007a3f"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Technika uses your location to show nearby jobs and let admins track technicians in the field."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Technika needs photo library access so you can attach photos to task reports.",
+          "cameraPermission": "Technika needs camera access so you can attach photos to task reports."
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Technika uses Face ID to let you sign in quickly and securely."
+        }
+      ],
+      "expo-font"
+    ]
+  }
 }

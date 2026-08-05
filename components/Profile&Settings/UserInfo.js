@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     View,
     Text,
@@ -12,14 +12,14 @@ import {
     Platform,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import CountryPicker from "react-native-country-picker-modal";
+import { CountryPicker } from "react-native-country-codes-picker";
 import Icon from "react-native-vector-icons/MaterialIcons";
-import { useEffect } from "react";
 import api from "../../api";
 
 export default function PersonalInfoScreen({ navigation }) {
     const [profileImage, setProfileImage] = useState(null);
-    const [selectedCountry, setSelectedCountry] = useState("GH");
+    const [showCountryPicker, setShowCountryPicker] = useState(false);
+    const [dialCode, setDialCode] = useState("+233");
     const [phoneNumber, setPhoneNumber] = useState("");
     const [fullName, setFullName] = useState("");
     const [email, setEmail] = useState("");
@@ -183,17 +183,14 @@ export default function PersonalInfoScreen({ navigation }) {
 
                     <Text style={styles.inputTitle}>Phone Number</Text>
                     <View style={styles.phoneInputContainer}>
-                        <View style={styles.countryPickerContainer}>
-                            <CountryPicker
-                                withFilter
-                                withFlag
-                                withCallingCode
-                                countryCode={selectedCountry}
-                                onSelect={(country) =>
-                                    setSelectedCountry(country.cca2)
-                                }
-                            />
-                        </View>
+                        <TouchableOpacity
+                            style={styles.countryPickerContainer}
+                            onPress={() => setShowCountryPicker(true)}
+                        >
+                            <Text style={styles.countryPickerText}>
+                                {dialCode}
+                            </Text>
+                        </TouchableOpacity>
                         <TextInput
                             style={styles.phoneInput}
                             placeholder="Phone Number"
@@ -202,6 +199,15 @@ export default function PersonalInfoScreen({ navigation }) {
                             placeholderTextColor="#ccc"
                         />
                     </View>
+
+                    <CountryPicker
+                        show={showCountryPicker}
+                        pickerButtonOnPress={(item) => {
+                            setDialCode(item.dial_code);
+                            setShowCountryPicker(false);
+                        }}
+                        onBackdropPress={() => setShowCountryPicker(false)}
+                    />
                 </View>
 
                 {/* Confirm Button */}
@@ -311,6 +317,11 @@ const styles = StyleSheet.create({
         flex: 0.15,
         borderRightWidth: 1,
         borderRightColor: "#ccc",
+        justifyContent: "center",
+    },
+    countryPickerText: {
+        fontSize: 16,
+        color: "#333",
     },
     phoneInput: {
         flex: 0.65,

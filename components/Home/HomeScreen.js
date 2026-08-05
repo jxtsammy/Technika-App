@@ -107,7 +107,7 @@ const HomeScreen = ({ navigation }) => {
             change: "",
             color: "#23C581",
             text: "",
-            image: require("../../assets/TaskCompleted.png"),
+            image: require("../../assets/TaskAvailable.png"),
         },
         {
             title: "Task In Progress",
