@@ -27,6 +27,8 @@ import notification from "./components/Profile&Settings/Notifications";
 import getLocation from "./components/ToggeLocation/GetLocation";
 import technicalAssist from "./components/AiTechnician/TechiAI";
 import deleteAccountConfirmation from "./components/Profile&Settings/DeleteAccountConfirmation";
+import acknowledgmentToken from "./components/OnTask/AcknowledgmentToken"
+import taskSuccessMsg from "./components/OnTask/TaskSuccessMsg"
 
 const Stack = createStackNavigator();
 
@@ -167,6 +169,16 @@ const App = () => {
                 <Stack.Screen
                     name="deleteAccountConfirmation"
                     component={deleteAccountConfirmation}
+                    options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                    name="acknowledgmentToken"
+                    component={acknowledgmentToken}
+                    options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                    name="taskSuccessMsg"
+                    component={taskSuccessMsg}
                     options={{ headerShown: false }}
                 />
             </Stack.Navigator>

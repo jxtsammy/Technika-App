@@ -46,7 +46,7 @@ const ReportScreen = ({ navigation, route }) => {
         } catch (error) {
             console.error("Could not save note:", error);
         } finally {
-            navigation.replace("home");
+            navigation.navigate("acknowledgmentToken");
         }
     };
 
