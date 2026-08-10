@@ -11,7 +11,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 const OperationSuccessScreen = ({ navigation }) => {
   const handleContinue = () => {
-    navigation.reset('home');
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'home' }],
+    });
   };
 
   return (

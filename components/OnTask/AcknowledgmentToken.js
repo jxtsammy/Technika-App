@@ -65,7 +65,14 @@ const TokenModalScreen = ({ navigation, visible = true, onClose }) => {
 
     setTimeout(() => {
       setLoading(false);
-      navigation.reset('taskSuccessMsg', { token: enteredToken });
+      navigation.reset({
+        index: 0,
+        routes: [
+          {
+            name: 'taskSuccessMsg',
+          },
+        ],
+      });
     }, 1500);
   };
 
