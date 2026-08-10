@@ -103,12 +103,23 @@ const SignInScreen = ({ navigation }) => {
         setIsLoading(true);
         try {
             const response = await api.post("/auth/login", { email, password });
-            const { token, firstName, lastName, role } = response.data;
+
+            if (response.data.twoStepRequired) {
+                navigation.navigate("verification", {
+                    mode: "login",
+                    preAuthToken: response.data.preAuthToken,
+                    rememberMe,
+                    email,
+                });
+                return;
+            }
+
+            const { token, _id, firstName, lastName, role } = response.data;
 
             await AsyncStorage.setItem("token", token);
             await AsyncStorage.setItem(
                 "user",
-                JSON.stringify({ firstName, lastName, role }),
+                JSON.stringify({ _id, firstName, lastName, role }),
             ); //reload
 
             if (rememberMe) {
@@ -242,7 +253,7 @@ const SignInScreen = ({ navigation }) => {
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     onPress={() =>
-                                        navigation.navigate("ForgotPassword")
+                                        navigation.navigate("forgotPassword")
                                     }
                                 >
                                     <Text style={styles.forgotPasswordText}>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     View,
     Text,
@@ -7,17 +7,17 @@ import {
     StyleSheet,
     ScrollView,
     Switch,
-    Alert, // 👈 1. Added Alert
+    Alert,
 } from "react-native";
-import CountryPicker from "react-native-country-picker-modal";
+import { CountryPicker } from "react-native-country-codes-picker";
 import Icon from "react-native-vector-icons/MaterialIcons";
-import * as LocalAuthentication from "expo-local-authentication"; // 👈 2. Added Local Auth
-import { useEffect } from "react";
+import * as LocalAuthentication from "expo-local-authentication";
 import api from "../../api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const AccountSecurityScreen = ({ navigation }) => {
-    const [countryCode, setCountryCode] = useState("GH");
+    const [showCountryPicker, setShowCountryPicker] = useState(false);
+    const [dialCode, setDialCode] = useState("+233");
     const [twoStepVerification, setTwoStepVerification] = useState(false);
     const [phoneNumber, setPhoneNumber] = useState("");
     const [passwordVisible, setPasswordVisible] = useState(false);
@@ -41,19 +41,17 @@ const AccountSecurityScreen = ({ navigation }) => {
         }
     };
 
-    // 🔐 3. Reusable Secure Action Handler
+    // 🔐 Reusable Secure Action Handler
     const handleSecureAction = async (actionType) => {
         const hasHardware = await LocalAuthentication.hasHardwareAsync();
         const isEnrolled = await LocalAuthentication.isEnrolledAsync();
 
-        // Prompts change depending on what the user clicked
         const promptMessage =
             actionType === "delete"
                 ? "Verify your identity to delete your account"
                 : "Verify your identity to change password";
 
         if (!hasHardware || !isEnrolled) {
-            // Fallback if the user has no FaceID/Fingerprint set up on their phone
             Alert.alert(
                 "Secure Check",
                 "Biometrics aren't set up on this device.",
@@ -76,7 +74,7 @@ const AccountSecurityScreen = ({ navigation }) => {
 
         const result = await LocalAuthentication.authenticateAsync({
             promptMessage: promptMessage,
-            disableDeviceFallback: false, // Let them use phone pin if biometrics fail
+            disableDeviceFallback: false,
         });
 
         if (result.success) {
@@ -127,18 +125,27 @@ const AccountSecurityScreen = ({ navigation }) => {
                 {/* Phone Number Section */}
                 <Text style={styles.label}>Phone Number</Text>
                 <View style={styles.inputRow}>
-                    <CountryPicker
-                        withFlag
-                        withCallingCode
-                        countryCode={countryCode}
-                        onSelect={(country) => setCountryCode(country.cca2)}
-                    />
+                    <TouchableOpacity
+                        style={styles.countryButton}
+                        onPress={() => setShowCountryPicker(true)}
+                    >
+                        <Text style={styles.countryButtonText}>{dialCode}</Text>
+                    </TouchableOpacity>
                     <TextInput
                         style={styles.phoneInput}
                         value={phoneNumber}
                         onChangeText={setPhoneNumber}
                     />
                 </View>
+
+                <CountryPicker
+                    show={showCountryPicker}
+                    pickerButtonOnPress={(item) => {
+                        setDialCode(item.dial_code);
+                        setShowCountryPicker(false);
+                    }}
+                    onBackdropPress={() => setShowCountryPicker(false)}
+                />
 
                 {/* Password Section */}
                 <Text style={styles.label}>Password</Text>
@@ -195,7 +202,7 @@ const AccountSecurityScreen = ({ navigation }) => {
                     </View>
                 </TouchableOpacity>
 
-                {/* 👈 4. Trigger safe action on delete here! */}
+                {/* Delete account */}
                 <TouchableOpacity
                     style={styles.deleteAccount}
                     onPress={() => handleSecureAction("delete")}
@@ -267,6 +274,14 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         paddingHorizontal: 10,
         paddingVertical: 10,
+    },
+    countryButton: {
+        paddingHorizontal: 10,
+        justifyContent: "center",
+    },
+    countryButtonText: {
+        fontSize: 16,
+        color: "#333",
     },
     resetPassword: {
         color: "red",

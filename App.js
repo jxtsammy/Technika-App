@@ -3,6 +3,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import welcome from "./components/WelcomeScreen/Welcome";
 import login from "./components/VerificationMethods/Login";
+import forgotPassword from "./components/VerificationMethods/ForgotPassword";
 import signup from "./components/VerificationMethods/Register";
 import verification from "./components/VerificationMethods/PhoneVerification";
 import success from "./components/VerificationMethods/VerificationSuccess";
@@ -24,7 +25,7 @@ import loadingScreen from "./components/WelcomeScreen/LoadingScreen";
 import taskReport from "./components/OnTask/TaskReport";
 import currentTask from "./components/OnTask/OnTask";
 import notification from "./components/Profile&Settings/Notifications";
-import getLocation from "./components/ToggeLocation/GetLocation";
+import getLocation from "./components/ToggleLocation/GetLocation";
 import technicalAssist from "./components/AiTechnician/TechiAI";
 import deleteAccountConfirmation from "./components/Profile&Settings/DeleteAccountConfirmation";
 import acknowledgmentToken from "./components/OnTask/AcknowledgmentToken"
@@ -49,6 +50,11 @@ const App = () => {
                 <Stack.Screen
                     name="login"
                     component={login}
+                    options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                    name="forgotPassword"
+                    component={forgotPassword}
                     options={{ headerShown: false }}
                 />
                 <Stack.Screen
