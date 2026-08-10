@@ -6,6 +6,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import * as Location from "expo-location";
 
+import api from "../../api";
+
 const LocationPermissionScreen = ({ navigation }) => {
     const enableLocation = async () => {
         let { status } = await Location.requestForegroundPermissionsAsync();
@@ -13,7 +15,15 @@ const LocationPermissionScreen = ({ navigation }) => {
         if (status == "granted") {
             let location = await Location.getCurrentPositionAsync({});
 
-            console.log(location);
+            try {
+                await api.put("/users/location", {
+                    latitude: location.coords.latitude,
+                    longitude: location.coords.longitude,
+                });
+            } catch (error) {
+                // Don't block onboarding on a failed location push — log and continue.
+                console.error("Failed to push location to backend:", error);
+            }
 
             navigation.replace("welcome");
         } else {
