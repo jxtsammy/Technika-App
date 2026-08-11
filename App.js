@@ -30,6 +30,9 @@ import technicalAssist from "./components/AiTechnician/TechiAI";
 import deleteAccountConfirmation from "./components/Profile&Settings/DeleteAccountConfirmation";
 import acknowledgmentToken from "./components/OnTask/AcknowledgmentToken"
 import taskSuccessMsg from "./components/OnTask/TaskSuccessMsg"
+import forgotPasswordEmail from "./components/ForgotPassword/PasswordEmail"
+import forgotEmailVerification from "./components/ForgotPassword/ForgotEmailVerification"
+import updateNewPassword from "./components/ForgotPassword/ChangePassword"
 
 const Stack = createStackNavigator();
 
@@ -185,6 +188,21 @@ const App = () => {
                 <Stack.Screen
                     name="taskSuccessMsg"
                     component={taskSuccessMsg}
+                    options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                    name="forgotPasswordEmail"
+                    component={forgotPasswordEmail}
+                    options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                    name="forgotEmailVerification"
+                    component={forgotEmailVerification}
+                    options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                    name="updateNewPassword"
+                    component={updateNewPassword}
                     options={{ headerShown: false }}
                 />
             </Stack.Navigator>
