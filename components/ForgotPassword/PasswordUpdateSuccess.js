@@ -44,9 +44,9 @@ export default function ResetSuccessScreen({ navigation }) {
 
           {/* Heading Content */}
           <View style={styles.textContainer}>
-            <Text style={styles.title}>Password Changed</Text>
+            <Text style={styles.title}>Password Updated</Text>
             <Text style={styles.subtitle}>
-              Your password has been changed successfully
+              Your password has been updated successfully
             </Text>
           </View>
 
