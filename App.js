@@ -33,6 +33,7 @@ import taskSuccessMsg from "./components/OnTask/TaskSuccessMsg"
 import forgotPasswordEmail from "./components/ForgotPassword/PasswordEmail"
 import forgotEmailVerification from "./components/ForgotPassword/ForgotEmailVerification"
 import updateNewPassword from "./components/ForgotPassword/ChangePassword"
+import passwordUpdateSuccess from "./components/ForgotPassword/PasswordUpdateSuccess"
 
 const Stack = createStackNavigator();
 
@@ -203,6 +204,11 @@ const App = () => {
                 <Stack.Screen
                     name="updateNewPassword"
                     component={updateNewPassword}
+                    options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                    name="passwordUpdateSuccess"
+                    component={passwordUpdateSuccess}
                     options={{ headerShown: false }}
                 />
             </Stack.Navigator>

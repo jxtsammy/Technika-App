@@ -21,7 +21,7 @@ export default function ForgotPasswordScreen({ navigation }) {
     }
 
     // Navigate to the next screen
-    navigation.navigate('OTPVerification', { email });
+    navigation.navigate('forgotEmailVerification', { email });
   };
 
   return (
