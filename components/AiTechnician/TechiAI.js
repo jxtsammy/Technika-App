@@ -70,6 +70,7 @@ const ChatScreen = ({ navigation }) => {
   const [isSelectionMode, setIsSelectionMode] = useState(false)
   const [isOnline, setIsOnline] = useState(true)
   const [showPredefinedMessages, setShowPredefinedMessages] = useState(true)
+  const [pendingImage, setPendingImage] = useState(null) // { uri, base64, mimeType }
 
   // Predefined messages for the tabs
   const predefinedMessages = [
@@ -100,20 +101,12 @@ const ChatScreen = ({ navigation }) => {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
-        quality: 1,
+        quality: 0.4,
+        base64: true,
       })
       if (!result.canceled) {
-        const imageUri = result.assets[0].uri
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          {
-            id: Date.now().toString(),
-            text: "",
-            image: imageUri,
-            isSent: true,
-            time: new Date().toLocaleTimeString(),
-          },
-        ])
+        const asset = result.assets[0]
+        setPendingImage({ uri: asset.uri, base64: asset.base64, mimeType: asset.mimeType || "image/jpeg" })
       }
     } catch (error) {
       console.log("Error picking image:", error)
@@ -129,22 +122,13 @@ const ChatScreen = ({ navigation }) => {
       }
       const result = await ImagePicker.launchCameraAsync({
         allowsEditing: true,
-        quality: 1,
+        quality: 0.4,
+        base64: true,
       })
       if (!result.canceled) {
-        const imageUri = result.assets[0].uri
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          {
-            id: Date.now().toString(),
-            text: "",
-            image: imageUri,
-            isSent: true,
-            time: new Date().toLocaleTimeString(),
-          },
-        ])
+        const asset = result.assets[0]
+        setPendingImage({ uri: asset.uri, base64: asset.base64, mimeType: asset.mimeType || "image/jpeg" })
       }
-      // eslint-disable-next-line no-empty
     } catch (error) {
       console.log("Error taking photo:", error)
     }
@@ -176,20 +160,30 @@ const ChatScreen = ({ navigation }) => {
 
   const handleSend = async () => {
     const text = inputText.trim()
-    if (!text) return
+    if (!text && !pendingImage) return
+
+    // Build API content — multipart if there's a staged image, plain string otherwise
+    const apiContent = pendingImage
+      ? [
+          { type: "image_base64", data: pendingImage.base64, mimeType: pendingImage.mimeType },
+          ...(text ? [{ type: "text", content: text }] : []),
+        ]
+      : text
 
     const userUiMessage = {
       id: Date.now().toString(),
-      text,
+      text: text || "",
+      image: pendingImage ? pendingImage.uri : null,
       isSent: true,
       time: new Date().toLocaleTimeString(),
     }
 
-    const nextHistory = [...history, { role: "user", content: text }]
+    const nextHistory = [...history, { role: "user", content: apiContent }]
 
     setMessages((prev) => [...prev, userUiMessage, { id: "typing", type: "typing" }])
     setHistory(nextHistory)
     setInputText("")
+    setPendingImage(null)
     setShowPredefinedMessages(false)
 
     try {
@@ -353,6 +347,15 @@ const ChatScreen = ({ navigation }) => {
                 </ScrollView>
               )}
 
+              {pendingImage && (
+                <View style={styles.pendingImageContainer}>
+                  <Image source={{ uri: pendingImage.uri }} style={styles.pendingImageThumb} />
+                  <TouchableOpacity onPress={() => setPendingImage(null)} style={styles.pendingImageRemove}>
+                    <Text style={styles.pendingImageRemoveText}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
               <View style={styles.inputRow}>
                 <View style={styles.inputFieldContainer}>
                   <TouchableOpacity onPress={pickImage}>
@@ -365,11 +368,14 @@ const ChatScreen = ({ navigation }) => {
                     value={inputText}
                     onChangeText={(text) => {
                       setInputText(text)
-                      setShowPredefinedMessages(text.length === 0) // Show/hide based on input text
+                      setShowPredefinedMessages(text.length === 0)
                     }}
                   />
                 </View>
-                <TouchableOpacity onPress={inputText.trim() ? handleSend : null} style={styles.sendButton}>
+                <TouchableOpacity
+                  onPress={(inputText.trim() || pendingImage) ? handleSend : null}
+                  style={styles.sendButton}
+                >
                   <Send size={28} color="#ffffff" />
                 </TouchableOpacity>
               </View>
@@ -604,6 +610,32 @@ const styles = StyleSheet.create({
     color: "#000",
     fontSize: 13,
     fontWeight: "500",
+  },
+  pendingImageContainer: {
+    alignSelf: "flex-start",
+    marginHorizontal: 20,
+    marginBottom: 8,
+  },
+  pendingImageThumb: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+  },
+  pendingImageRemove: {
+    position: "absolute",
+    top: -6,
+    right: -6,
+    backgroundColor: "#333",
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  pendingImageRemoveText: {
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: "bold",
   },
 })
 
