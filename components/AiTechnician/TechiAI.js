@@ -187,7 +187,7 @@ const ChatScreen = ({ navigation }) => {
     setShowPredefinedMessages(false)
 
     try {
-      const { data } = await api.post("/ai/chat", { messages: nextHistory })
+      const { data } = await api.post("/ai/chat", { messages: nextHistory.slice(-15) })
 
       const replyUiMessage = {
         id: Date.now().toString(),
