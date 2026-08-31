@@ -1,5 +1,6 @@
 "use client"
-import { useState, useRef, useEffect } from "react" // Import useRef and useEffect
+import { useState, useRef, useEffect } from "react"
+import api from "../../api"
 import {
   View,
   Text,
@@ -63,11 +64,13 @@ const TypingIndicator = () => {
 
 const ChatScreen = ({ navigation }) => {
   const [messages, setMessages] = useState([])
+  const [history, setHistory] = useState([])
   const [inputText, setInputText] = useState("")
   const [selectedMessages, setSelectedMessages] = useState([])
   const [isSelectionMode, setIsSelectionMode] = useState(false)
-  const [isOnline, setIsOnline] = useState(true) // Online/Offline status
-  const [showPredefinedMessages, setShowPredefinedMessages] = useState(true) // State for tabs visibility
+  const [isOnline, setIsOnline] = useState(true)
+  const [showPredefinedMessages, setShowPredefinedMessages] = useState(true)
+  const [pendingImage, setPendingImage] = useState(null) // { uri, base64, mimeType }
 
   // Predefined messages for the tabs
   const predefinedMessages = [
@@ -98,21 +101,12 @@ const ChatScreen = ({ navigation }) => {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
-        quality: 1,
+        quality: 0.4,
+        base64: true,
       })
       if (!result.canceled) {
-        const imageUri = result.assets[0].uri
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          {
-            id: Date.now().toString(),
-            text: "",
-            image: imageUri,
-            isSent: true,
-            time: new Date().toLocaleTimeString(),
-          },
-        ])
-        handleBotResponse() // Simulate bot response
+        const asset = result.assets[0]
+        setPendingImage({ uri: asset.uri, base64: asset.base64, mimeType: asset.mimeType || "image/jpeg" })
       }
     } catch (error) {
       console.log("Error picking image:", error)
@@ -128,23 +122,13 @@ const ChatScreen = ({ navigation }) => {
       }
       const result = await ImagePicker.launchCameraAsync({
         allowsEditing: true,
-        quality: 1,
+        quality: 0.4,
+        base64: true,
       })
       if (!result.canceled) {
-        const imageUri = result.assets[0].uri
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          {
-            id: Date.now().toString(),
-            text: "",
-            image: imageUri,
-            isSent: true,
-            time: new Date().toLocaleTimeString(),
-          },
-        ])
-        handleBotResponse() // Simulate bot response
+        const asset = result.assets[0]
+        setPendingImage({ uri: asset.uri, base64: asset.base64, mimeType: asset.mimeType || "image/jpeg" })
       }
-      // eslint-disable-next-line no-empty
     } catch (error) {
       console.log("Error taking photo:", error)
     }
@@ -174,35 +158,66 @@ const ChatScreen = ({ navigation }) => {
     setIsSelectionMode(false)
   }
 
-  const handleSend = () => {
-    if (inputText.trim()) {
-      const newMessage = {
+  const handleSend = async () => {
+    const text = inputText.trim()
+    if (!text && !pendingImage) return
+
+    // Build API content — multipart if there's a staged image, plain string otherwise
+    const apiContent = pendingImage
+      ? [
+          { type: "image_base64", data: pendingImage.base64, mimeType: pendingImage.mimeType },
+          ...(text ? [{ type: "text", content: text }] : []),
+        ]
+      : text
+
+    const userUiMessage = {
+      id: Date.now().toString(),
+      text: text || "",
+      image: pendingImage ? pendingImage.uri : null,
+      isSent: true,
+      time: new Date().toLocaleTimeString(),
+    }
+
+    const nextHistory = [...history, { role: "user", content: apiContent }]
+
+    setMessages((prev) => [...prev, userUiMessage, { id: "typing", type: "typing" }])
+    setHistory(nextHistory)
+    setInputText("")
+    setPendingImage(null)
+    setShowPredefinedMessages(false)
+
+    try {
+      const { data } = await api.post("/ai/chat", { messages: nextHistory.slice(-15) })
+
+      const replyUiMessage = {
         id: Date.now().toString(),
-        text: inputText,
-        isSent: true,
+        text: data.reply,
+        isSent: false,
         time: new Date().toLocaleTimeString(),
       }
-      setMessages((prevMessages) => [...prevMessages, newMessage, { id: "typing", type: "typing" }]) // Add typing indicator message
-      setInputText("")
-      setShowPredefinedMessages(false) // Hide tabs when sending
-      handleBotResponse()
-    }
-  }
 
-  const handleBotResponse = () => {
-    setTimeout(() => {
-      setMessages((prevMessages) => {
-        const updatedMessages = prevMessages.filter((msg) => msg.id !== "typing") // Remove typing indicator
-        const botMessage = {
+      setMessages((prev) => [
+        ...prev.filter((m) => m.id !== "typing"),
+        replyUiMessage,
+      ])
+      setHistory((prev) => [...prev, { role: "assistant", content: data.reply }])
+    } catch (err) {
+      const errorText =
+        err.response?.data?.message || "Techi is unavailable right now. Try again."
+
+      setMessages((prev) => [
+        ...prev.filter((m) => m.id !== "typing"),
+        {
           id: Date.now().toString(),
-          text: "This is a bot response!",
+          text: errorText,
           isSent: false,
+          isError: true,
           time: new Date().toLocaleTimeString(),
-        }
-        return [...updatedMessages, botMessage]
-      })
-      setShowPredefinedMessages(true) // Show tabs after bot responds
-    }, 1500) // Simulate bot thinking time
+        },
+      ])
+    } finally {
+      setShowPredefinedMessages(true)
+    }
   }
 
   const renderMessage = ({ item }) => {
@@ -236,6 +251,7 @@ const ChatScreen = ({ navigation }) => {
           style={[
             styles.messageBubble,
             item.isSent ? styles.sentMessage : styles.receivedMessage,
+            item.isError && styles.errorMessage,
             selectedMessages.includes(item.id) && styles.selectedMessageBubble,
           ]}
         >
@@ -331,6 +347,15 @@ const ChatScreen = ({ navigation }) => {
                 </ScrollView>
               )}
 
+              {pendingImage && (
+                <View style={styles.pendingImageContainer}>
+                  <Image source={{ uri: pendingImage.uri }} style={styles.pendingImageThumb} />
+                  <TouchableOpacity onPress={() => setPendingImage(null)} style={styles.pendingImageRemove}>
+                    <Text style={styles.pendingImageRemoveText}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
               <View style={styles.inputRow}>
                 <View style={styles.inputFieldContainer}>
                   <TouchableOpacity onPress={pickImage}>
@@ -343,11 +368,14 @@ const ChatScreen = ({ navigation }) => {
                     value={inputText}
                     onChangeText={(text) => {
                       setInputText(text)
-                      setShowPredefinedMessages(text.length === 0) // Show/hide based on input text
+                      setShowPredefinedMessages(text.length === 0)
                     }}
                   />
                 </View>
-                <TouchableOpacity onPress={inputText.trim() ? handleSend : null} style={styles.sendButton}>
+                <TouchableOpacity
+                  onPress={(inputText.trim() || pendingImage) ? handleSend : null}
+                  style={styles.sendButton}
+                >
                   <Send size={28} color="#ffffff" />
                 </TouchableOpacity>
               </View>
@@ -472,6 +500,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#E0E0E0",
     borderTopLeftRadius: 0,
   },
+  errorMessage: {
+    backgroundColor: "#fde8e8",
+  },
   messageText: {
     color: "#000",
     fontSize: 14,
@@ -579,6 +610,32 @@ const styles = StyleSheet.create({
     color: "#000",
     fontSize: 13,
     fontWeight: "500",
+  },
+  pendingImageContainer: {
+    alignSelf: "flex-start",
+    marginHorizontal: 20,
+    marginBottom: 8,
+  },
+  pendingImageThumb: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+  },
+  pendingImageRemove: {
+    position: "absolute",
+    top: -6,
+    right: -6,
+    backgroundColor: "#333",
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  pendingImageRemoveText: {
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: "bold",
   },
 })
 
