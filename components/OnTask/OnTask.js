@@ -11,12 +11,14 @@ import {
 import MapView, { Polyline, Marker } from "react-native-maps";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import api from "../../api";
+import TokenModalScreen from "./AcknowledgmentToken";
 
 const DeliveryTrackingApp = ({ navigation, route }) => {
     const { task } = route.params;
 
     const [hasArrived, setHasArrived] = useState(false);
     const [arrivalTime, setArrivalTime] = useState(null);
+    const [showTokenModal, setShowTokenModal] = useState(false);
 
     const routeCoordinates = [
         { latitude: 6.6715, longitude: -1.5694 },
@@ -46,15 +48,22 @@ const DeliveryTrackingApp = ({ navigation, route }) => {
                 "You have arrived at the destination.",
             );
         } else {
-            try {
-                await api.put(`/tasks/${task._id}/status`, {
-                    status: "completed",
-                });
-            } catch (error) {
-                console.error("Could not complete task:", error);
-            }
-            navigation.replace("taskReport", { task, arrivalTime });
+            // Completion now requires the customer's verification code (or a
+            // disputed/admin-override path) — technicians can no longer mark
+            // a task completed directly. Open the token modal instead of
+            // calling the status endpoint.
+            setShowTokenModal(true);
         }
+    };
+
+    // Called by the token modal once the backend confirms the code was
+    // correct and the task is genuinely marked completed.
+    const handleVerifySuccess = (updatedTask) => {
+        setShowTokenModal(false);
+        navigation.replace("taskReport", {
+            task: updatedTask || task,
+            arrivalTime,
+        });
     };
 
     return (
@@ -173,6 +182,14 @@ const DeliveryTrackingApp = ({ navigation, route }) => {
                     </Text>
                 </TouchableOpacity>
             </View>
+
+            <TokenModalScreen
+                visible={showTokenModal}
+                taskId={task._id}
+                navigation={navigation}
+                onClose={() => setShowTokenModal(false)}
+                onVerifySuccess={handleVerifySuccess}
+            />
         </View>
     );
 };
