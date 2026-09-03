@@ -12,6 +12,7 @@ import {
   StatusBar,
   Alert,
 } from "react-native";
+import { WebView } from "react-native-webview";
 import AiButton from "../AiTechnician/Icon";
 import {
   Home,
@@ -20,8 +21,6 @@ import {
   User,
   Bell,
 } from "lucide-react-native";
-import MapView, { Marker } from "react-native-maps";
-import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { LineChart } from "react-native-chart-kit";
 import Chats from "../../components/Chat/ChatList";
 import Tasks from "./Task";
@@ -45,8 +44,8 @@ const HomeScreen = ({ navigation }) => {
   const [monthlyData, setMonthlyData] = useState([]);
   const [currentTask, setCurrentTask] = useState(null);
 
-  // Real-time map location state
-  const mapRef = useRef(null);
+  // Real-time map location state & WebView reference
+  const webViewRef = useRef(null);
   const [userLocation, setUserLocation] = useState(null);
 
   useEffect(() => {
@@ -80,6 +79,16 @@ const HomeScreen = ({ navigation }) => {
             longitude: location.coords.longitude,
           };
           setUserLocation(newCoords);
+
+          // Smoothly update marker position and map center in Leaflet dynamically
+          if (webViewRef.current) {
+            webViewRef.current.injectJavaScript(`
+              if (window.userMarker && window.map) {
+                window.userMarker.setLatLng([${newCoords.latitude}, ${newCoords.longitude}]);
+                window.map.setView([${newCoords.latitude}, ${newCoords.longitude}], 18);
+              }
+            `);
+          }
         }
       );
     };
@@ -169,6 +178,57 @@ const HomeScreen = ({ navigation }) => {
     },
   ];
 
+  // Leaflet Map HTML setup
+  const defaultLat = userLocation?.latitude || 6.307;
+  const defaultLng = userLocation?.longitude || 0.0541;
+  const taskLat = currentTask?.location?.coordinates?.[1];
+  const taskLng = currentTask?.location?.coordinates?.[0];
+
+  const leafletHtml = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <style>
+          html, body, #map {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+          }
+        </style>
+      </head>
+      <body>
+        <div id="map"></div>
+        <script>
+          // Initialize Leaflet map with zoom level 18
+          var map = L.map('map').setView([${defaultLat}, ${defaultLng}], 18);
+          window.map = map;
+
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+          }).addTo(map);
+
+          // User Location Marker
+          var userMarker = L.marker([${defaultLat}, ${defaultLng}])
+            .addTo(map)
+            .bindPopup('Your Location');
+          window.userMarker = userMarker;
+
+          // Assigned Job Marker
+          ${
+            taskLat && taskLng
+              ? `L.marker([${taskLat}, ${taskLng}]).addTo(map).bindPopup('${currentTask?.title || "Assigned Job Location"}');`
+              : ""
+          }
+        </script>
+      </body>
+    </html>
+  `;
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
@@ -212,43 +272,14 @@ const HomeScreen = ({ navigation }) => {
       {/* Tab Content */}
       {activeTab === "map" ? (
         <View style={styles.mapContainer}>
-          <MapView
-            ref={mapRef}
+          <WebView
+            ref={webViewRef}
+            originWhitelist={["*"]}
+            source={{ html: leafletHtml }}
             style={styles.map}
-            showsUserLocation={true}
-            showsMyLocationButton={true}
-            initialRegion={{
-              latitude: userLocation?.latitude || 6.307,
-              longitude: userLocation?.longitude || 0.0541,
-              latitudeDelta: 0.02,
-              longitudeDelta: 0.02,
-            }}
-          >
-            {/* User Location Marker */}
-            {userLocation && (
-              <Marker
-                coordinate={userLocation}
-                title="Your Location"
-                pinColor="blue"
-              />
-            )}
-
-            {/* Current Active Job Marker */}
-            {currentTask?.location?.coordinates && (
-              <Marker
-                coordinate={{
-                  latitude: currentTask.location.coordinates[1],
-                  longitude: currentTask.location.coordinates[0],
-                }}
-                title={currentTask.title}
-                description="Assigned Job Location"
-              >
-                <View style={styles.jobMarker}>
-                  <MaterialIcons name="engineering" size={24} color="white" />
-                </View>
-              </Marker>
-            )}
-          </MapView>
+            javaScriptEnabled={true}
+            domStorageEnabled={true}
+          />
           <TouchableOpacity
             style={styles.floatingButton}
             onPress={() => navigation.navigate("Tasks")}
@@ -483,193 +514,183 @@ export default function App({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        padding: 16,
-        backgroundColor: "#fff",
-    },
-    header: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        paddingTop: 60,
-        backgroundColor: "#ffff",
-        paddingHorizontal: 15,
-    },
-    headerTitle: {
-        fontSize: 22,
-        fontWeight: "bold",
-    },
-    headerIcons: {
-        flexDirection: "row",
-        alignItems: "center",
-    },
-    notificationIcon: {
-        marginLeft: 5,
-    },
-    notificationBadge: {
-        position: "absolute",
-        top: -5,
-        right: -5,
-        backgroundColor: "#007a3f",
-        borderRadius: 10,
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-    },
-    notificationBadgeText: {
-        color: "#fff",
-        fontSize: 10,
-    },
-    tabs: {
-        flexDirection: "row",
-        marginBottom: 25,
-    },
-    tabButton: {
-        flex: 1,
-        paddingVertical: 10,
-        borderWidth: 1,
-        borderColor: "#007a3f",
-        borderRadius: 20,
-        alignItems: "center",
-        marginHorizontal: 5,
-    },
-    tabText: {
-        fontSize: 14,
-        color: "#007a3f",
-    },
-    taskCard: {
-        backgroundColor: "#007a3f",
-        borderRadius: 18,
-        padding: 20,
-        marginBottom: 30,
-    },
-    taskCardContent: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-    },
-    taskId: {
-        color: "#fff",
-        fontSize: 14,
-    },
-    taskTitle: {
-        color: "#fff",
-        fontSize: 20,
-        fontWeight: "bold",
-        marginVertical: 10,
-    },
-    viewProgressButton: {
-        backgroundColor: "#fff",
-        paddingVertical: 8,
-        paddingHorizontal: 16,
-        borderRadius: 5,
-    },
-    viewProgressText: {
-        color: "#007a3f",
-        fontSize: 14,
-        fontWeight: "bold",
-        textAlign: "center",
-    },
-    taskImage: {
-        width: 200,
-        height: 150,
-    },
-    quickStatsTitle: {
-        fontSize: 18,
-        fontWeight: "bold",
-        marginBottom: 10,
-        color: "#007a3f",
-    },
-    statsContainer: {
-        flexDirection: "row",
-        flexWrap: "wrap",
-        justifyContent: "space-between",
-    },
-    statBox: {
-        width: "49%",
-        backgroundColor: "#F4F4F4",
-        borderRadius: 8,
-        padding: 10,
-        marginBottom: 10,
-    },
-    statTitle: {
-        color: "#6C7278",
-        fontSize: 14,
-    },
-    statValue: {
-        fontSize: 23,
-        fontWeight: "bold",
-        color: "#007a3f",
-    },
-    statChange: {
-        fontSize: 12,
-        color: "#23C581",
-    },
-    statHeader: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "flex-start",
-        marginBottom: 5,
-    },
-    statRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-    },
-    statImage: {
-        width: 45,
-        height: 50,
-        resizeMode: "contain",
-        marginRight: 10,
-    },
-    statChangeText: {
-        fontSize: 12,
-        color: "#6C7278",
-        marginLeft: 4,
-    },
-    mapContainer: {
-        width: "110%",
-        height: "100%",
-        right: 20,
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    map: {
-        width: "100%",
-        height: "100%",
-    },
-    jobMarker: {
-        backgroundColor: "#0056D2",
-        borderRadius: 20,
-        padding: 5,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    floatingButton: {
-        position: "absolute",
-        bottom: 80,
-        right: 20,
-        width: 45,
-        height: 45,
-        backgroundColor: "#007a3f",
-        borderRadius: 30,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    taskNote: {
-        color: "#fff",
-        fontSize: 20,
-        fontWeight: "bold",
-    },
-    title: {
-        fontSize: 18,
-        fontWeight: "bold",
-        marginBottom: 10,
-        color: "#007a3f",
-        marginTop: 20,
-    },
-    chart: {
-        borderRadius: 10,
-        paddingHorizontal: 5,
-    },
+  container: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: "#fff",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingTop: 60,
+    backgroundColor: "#ffff",
+    paddingHorizontal: 15,
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+  },
+  headerIcons: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  notificationIcon: {
+    marginLeft: 5,
+  },
+  notificationBadge: {
+    position: "absolute",
+    top: -5,
+    right: -5,
+    backgroundColor: "#007a3f",
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  notificationBadgeText: {
+    color: "#fff",
+    fontSize: 10,
+  },
+  tabs: {
+    flexDirection: "row",
+    marginBottom: 25,
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: "#007a3f",
+    borderRadius: 20,
+    alignItems: "center",
+    marginHorizontal: 5,
+  },
+  tabText: {
+    fontSize: 14,
+    color: "#007a3f",
+  },
+  taskCard: {
+    backgroundColor: "#007a3f",
+    borderRadius: 18,
+    padding: 20,
+    marginBottom: 30,
+  },
+  taskCardContent: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  taskId: {
+    color: "#fff",
+    fontSize: 14,
+  },
+  taskTitle: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "bold",
+    marginVertical: 10,
+  },
+  viewProgressButton: {
+    backgroundColor: "#fff",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 5,
+  },
+  viewProgressText: {
+    color: "#007a3f",
+    fontSize: 14,
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+  taskImage: {
+    width: 200,
+    height: 150,
+  },
+  quickStatsTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+    color: "#007a3f",
+  },
+  statsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
+  statBox: {
+    width: "49%",
+    backgroundColor: "#F4F4F4",
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 10,
+  },
+  statTitle: {
+    color: "#6C7278",
+    fontSize: 14,
+  },
+  statValue: {
+    fontSize: 23,
+    fontWeight: "bold",
+    color: "#007a3f",
+  },
+  statChange: {
+    fontSize: 12,
+    color: "#23C581",
+  },
+  statHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-start",
+    marginBottom: 5,
+  },
+  statRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  statImage: {
+    width: 45,
+    height: 50,
+    resizeMode: "contain",
+    marginRight: 10,
+  },
+  statChangeText: {
+    fontSize: 12,
+    color: "#6C7278",
+    marginLeft: 4,
+  },
+  mapContainer: {
+    flex: 1,
+    overflow: "hidden",
+    borderRadius: 12,
+  },
+  map: {
+    flex: 1,
+  },
+  floatingButton: {
+    position: "absolute",
+    bottom: 20,
+    right: 20,
+    width: 45,
+    height: 45,
+    backgroundColor: "#007a3f",
+    borderRadius: 30,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  taskNote: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+    color: "#007a3f",
+    marginTop: 20,
+  },
+  chart: {
+    borderRadius: 10,
+    paddingHorizontal: 5,
+  },
 });
