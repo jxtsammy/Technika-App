@@ -30,6 +30,17 @@ import technicalAssist from "./components/AiTechnician/TechiAI";
 import deleteAccountConfirmation from "./components/Profile&Settings/DeleteAccountConfirmation";
 import acknowledgmentToken from "./components/OnTask/AcknowledgmentToken"
 import taskSuccessMsg from "./components/OnTask/TaskSuccessMsg"
+import forgotPasswordEmail from "./components/ForgotPassword/PasswordEmail"
+import forgotEmailVerification from "./components/ForgotPassword/ForgotEmailVerification"
+import updateNewPassword from "./components/ForgotPassword/ChangePassword"
+import passwordUpdateSuccess from "./components/ForgotPassword/PasswordUpdateSuccess"
+import basicDetails from './components/Registration&Auth/BasicDetails'
+import registrationAuth from './components/Registration&Auth/RegAuthentication'
+import processingScreen from './components/Registration&Auth/ProcessingScreen'
+import idProcessing from './components/Registration&Auth/IdProcessing'
+import extraDetails from './components/Registration&Auth/ExtraDetails'
+import accountCreated from './components/Registration&Auth/AccountCreated'
+
 
 const Stack = createStackNavigator();
 
@@ -185,6 +196,56 @@ const App = () => {
                 <Stack.Screen
                     name="taskSuccessMsg"
                     component={taskSuccessMsg}
+                    options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                    name="forgotPasswordEmail"
+                    component={forgotPasswordEmail}
+                    options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                    name="forgotEmailVerification"
+                    component={forgotEmailVerification}
+                    options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                    name="updateNewPassword"
+                    component={updateNewPassword}
+                    options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                    name="passwordUpdateSuccess"
+                    component={passwordUpdateSuccess}
+                    options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                    name="basicDetails"
+                    component={basicDetails}
+                    options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                    name="registrationAuth"
+                    component={registrationAuth}
+                    options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                    name="processingScreen"
+                    component={processingScreen}
+                    options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                    name="idProcessing"
+                    component={idProcessing}
+                    options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                    name="extraDetails"
+                    component={extraDetails}
+                    options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                    name="accountCreated"
+                    component={accountCreated}
                     options={{ headerShown: false }}
                 />
             </Stack.Navigator>
