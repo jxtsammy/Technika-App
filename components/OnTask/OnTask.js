@@ -12,6 +12,7 @@ import MapView, { Polyline, Marker } from "react-native-maps";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import api from "../../api";
 import TokenModalScreen from "./AcknowledgmentToken";
+import { openDirections } from "../../utils/directions";
 
 const DeliveryTrackingApp = ({ navigation, route }) => {
     const { task } = route.params;
@@ -170,6 +171,32 @@ const DeliveryTrackingApp = ({ navigation, route }) => {
                                     "N/A"}
                             </Text>
                         </View>
+
+                        <TouchableOpacity
+                            style={styles.directionsButton}
+                            onPress={() =>
+                                openDirections(
+                                    task.location?.latitude &&
+                                        task.location?.longitude
+                                        ? {
+                                              latitude: task.location.latitude,
+                                              longitude:
+                                                  task.location.longitude,
+                                          }
+                                        : task.location?.address,
+                                    task.jobDecription || task.title,
+                                )
+                            }
+                        >
+                            <Ionicons
+                                name="navigate"
+                                size={18}
+                                color="#FFFFFF"
+                            />
+                            <Text style={styles.directionsButtonText}>
+                                Get Directions
+                            </Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
 
@@ -286,6 +313,22 @@ const styles = StyleSheet.create({
         padding: 16,
         borderRadius: 8,
         alignItems: "center",
+    },
+    directionsButton: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "#007a3f",
+        borderRadius: 8,
+        paddingVertical: 10,
+        marginTop: 12,
+        marginBottom: 16,
+        gap: 6,
+    },
+    directionsButtonText: {
+        color: "#FFFFFF",
+        fontWeight: "600",
+        fontSize: 14,
     },
     completeButtonText: { color: "white", fontWeight: "500" },
 });
