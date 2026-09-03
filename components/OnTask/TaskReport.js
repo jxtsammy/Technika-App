@@ -15,6 +15,7 @@ import {
 import { FontAwesome, Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { CameraView, useCameraPermissions } from "expo-camera";
+import * as FileSystem from "expo-file-system/legacy";
 import api from "../../api";
 
 const ReportScreen = ({ navigation, route }) => {
@@ -89,27 +90,40 @@ const ReportScreen = ({ navigation, route }) => {
                 `/tasks/${taskId}/upload-signature`,
             );
 
-            // 2. Upload each captured photo straight to Cloudinary
+            // 2. Upload each captured photo straight to Cloudinary.
+            // Using expo-file-system's uploadAsync instead of fetch+FormData —
+            // RN's built-in FormData implementation on this version rejects the
+            // { uri, type, name } file-part shape with "Unsupported FormDataPart
+            // implementation". uploadAsync sidesteps that entirely. Note: this
+            // package's default export dropped uploadAsync in favor of a new
+            // File/Directory API — the classic API now lives under the
+            // '/legacy' import path, which is what's imported above.
             const uploadedUrls = [];
             for (const uri of selectedImages) {
-                const formData = new FormData();
-                formData.append("file", {
-                    uri,
-                    type: "image/jpeg",
-                    name: "evidence.jpg",
-                });
-                formData.append("api_key", sig.apiKey);
-                formData.append("timestamp", sig.timestamp);
-                formData.append("signature", sig.signature);
-                formData.append("folder", sig.folder);
-
-                const cloudRes = await fetch(
+                const result = await FileSystem.uploadAsync(
                     `https://api.cloudinary.com/v1_1/${sig.cloudName}/image/upload`,
-                    { method: "POST", body: formData },
+                    uri,
+                    {
+                        httpMethod: "POST",
+                        uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+                        fieldName: "file",
+                        parameters: {
+                            api_key: String(sig.apiKey),
+                            timestamp: String(sig.timestamp),
+                            signature: sig.signature,
+                            folder: sig.folder,
+                        },
+                    },
                 );
-                const cloudData = await cloudRes.json();
 
-                if (!cloudRes.ok) {
+                if (result.status < 200 || result.status >= 300) {
+                    throw new Error(
+                        `Image upload failed (status ${result.status})`,
+                    );
+                }
+
+                const cloudData = JSON.parse(result.body);
+                if (!cloudData.secure_url) {
                     throw new Error(
                         cloudData?.error?.message || "Image upload failed",
                     );
@@ -139,7 +153,16 @@ const ReportScreen = ({ navigation, route }) => {
         }
 
         setIsSubmitting(false);
-        navigation.navigate("acknowledgmentToken");
+        // Verification already happened before this screen (in DeliveryTrackingApp,
+        // via the token modal) — the task is already "completed" on the backend
+        // by this point. Navigating to "acknowledgmentToken" here was leftover
+        // wiring from before that reorder, and sent technicians through a second,
+        // disconnected instance of the token screen with no taskId — hence
+        // "missing task reference" on re-entry. Go straight to success instead.
+        navigation.reset({
+            index: 0,
+            routes: [{ name: "taskSuccessMsg" }],
+        });
     };
 
     const renderImage = ({ item, index }) => (
